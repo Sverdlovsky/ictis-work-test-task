@@ -1,11 +1,14 @@
 FROM docker.io/library/node:25.8.1-alpine3.23
 
-RUN useradd -m user
+RUN adduser -D user
 USER user
-COPY . /home/user/project
 WORKDIR /home/user/project
+
+COPY --chown=user:user . .
 
 EXPOSE 80
 
-CMD [ "npm", "i" ]
+RUN npm ci --only=production
+
+CMD [ "node", "app.js" ]
 
