@@ -30,7 +30,7 @@ jobs:
       with:
         context: ./front
         push: true
-        tags: ghcr.io/${{ github.repository_owner }}/front:latest
+        tags: ghcr.io/sverdlovsky/ictis-work-test-task-front:latest
         platforms: linux/amd64,linux/arm64
 
     - name: Build API
@@ -38,7 +38,7 @@ jobs:
       with:
         context: ./api
         push: true
-        tags: ghcr.io/${{ github.repository_owner }}/api:latest
+        tags: ghcr.io/sverdlovsky/ictis-work-test-task-api:latest
         platforms: linux/amd64,linux/arm64
 
     - name: Send Discord Alert
