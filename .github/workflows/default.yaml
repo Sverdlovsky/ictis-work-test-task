@@ -46,7 +46,6 @@ jobs:
       run: |
         curl -H "Content-Type: application/json" -d "{\"content\": \"Build complete\"}" ${{ secrets.DISCORD_WEBHOOK }}
 
-  deploy:
     - name: CD with SSH
       run: |
         mkdir -p ~/.ssh
