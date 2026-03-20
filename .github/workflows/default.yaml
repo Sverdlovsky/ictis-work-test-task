@@ -55,8 +55,8 @@ jobs:
 
         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-        ssh github@${{ secrets.SSH_HOST }} << 'EOF'
-          cd /home/github/project
+        ssh root@${{ secrets.SSH_HOST }} << 'EOF'
+          cd /prj
 
           docker pull ghcr.io/sverdlovsky/ictis-work-test-task-front:latest
           docker pull ghcr.io/sverdlovsky/ictis-work-test-task-api:latest

@@ -6,7 +6,7 @@ WORKDIR /home/user/project
 
 COPY --chown=user:user . .
 
-EXPOSE 80
+EXPOSE 3000
 
 RUN npm ci --only=production
 

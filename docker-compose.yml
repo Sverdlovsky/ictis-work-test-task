@@ -1,0 +1,159 @@
+services:
+  postgres:
+    image: docker.io/library/postgres:18.3-alpine3.23
+    expose:
+    - "5432/tcp"
+    volumes:
+    - /var/lib/postgresql:/var/lib/postgresql
+    - ./.config/postgres:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+    - internal
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespass
+    cpus: 0.6
+    mem_limit: "512MB"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  front:
+    image: ghcr.io/sverdlovsky/ictis-work-test-task-front
+    ports:
+    - "80:80/tcp"
+    - "443:443/tcp"
+    - "443:443/udp"
+    volumes:
+    - /etc/letsencrypt:/etc/letsencrypt
+    restart: unless-stopped
+    networks:
+    - internal
+    - public
+    cpus: 0.4
+    mem_limit: "256MB"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: ghcr.io/sverdlovsky/ictis-work-test-task-api
+    depends_on:
+    - postgres
+    expose:
+    - "3000/tcp"
+    restart: unless-stopped
+    networks:
+    - internal
+    environment:
+      PGHOST: postgres
+      PGUSER: api_user
+      PGPASSWORD: aupassword
+      PGDATABASE: api_db
+      PGPORT: 5432
+    cpus: 0.2
+    mem_limit: "128MB"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  grafana:
+    image: docker.io/grafana/grafana:12.4.1
+    expose:
+    - "3000/tcp"
+    volumes:
+    - grafana:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+    - internal
+    - public
+    environment:
+    - GF_SECURITY_ADMIN_USER=admin
+    - GF_SECURITY_ADMIN_PASSWORD=admin
+    - GF_USERS_ALLOW_SIGN_UP=false
+    - GF_DATABASE_TYPE=postgres
+    - GF_DATABASE_HOST=postgres:5432
+    - GF_DATABASE_NAME=grafana_db
+    - GF_DATABASE_USER=grafana_user
+    - GF_DATABASE_PASSWORD=grafanapassword
+    cpus: 0.4
+    mem_limit: "256MB"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: docker.io/prom/prometheus:v3.10.0-distroless
+    expose:
+    - "9090/tcp"
+    volumes:
+    - ./.config/prometheus:/etc/prometheus
+    networks:
+    - internal
+    cpus: 0.2
+    mem_limit: "128MB"
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    expose:
+    - 9100
+    restart: unless-stopped
+    volumes:
+    - /proc:/host/proc:ro
+    - /sys:/host/sys:ro
+    - /:/rootfs:ro
+    command:
+    - '--path.procfs=/host/proc'
+    - '--path.rootfs=/rootfs'
+    - '--path.sysfs=/host/sys'
+    - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+    - internal
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    expose:
+    - "9113/tcp"
+    command:
+    - -nginx.scrape-uri=http://front/nginx_status
+    networks:
+    - internal
+    cpus: 0.1
+    mem_limit: "128MB"
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres_exporter:pepassword@postgres:5432/postgres"
+    expose:
+    - "9187/tcp"
+    networks:
+    - internal
+    cpus: 0.1
+    mem_limit: "128MB"
+
+volumes:
+  grafana:
+
+networks:
+  internal:
+    driver: bridge
+    internal: true
+
+  public:
+    driver: bridge
+
